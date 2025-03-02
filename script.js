@@ -279,8 +279,7 @@ function setupUploadArea(type, areaId, previewId, inputId, isVideo = false) {
     // Use provided IDs or construct from type if not provided
     const uploadArea = document.getElementById(areaId || `${type}-upload-area`);
     const fileInput = document.getElementById(inputId || `${type}-file-input`);
-    const imagePreview = document.getElementById(previewId || `${type}-preview`);
-    const videoPreview = document.getElementById(`${type}-video-preview`);
+    const preview = document.getElementById(previewId || `${type}-preview`);
     const placeholder = uploadArea.querySelector('.upload-placeholder');
     
     // Trigger file input when clicking on upload area
@@ -303,50 +302,47 @@ function setupUploadArea(type, areaId, previewId, inputId, isVideo = false) {
         uploadArea.style.borderColor = '#ddd';
         
         if (e.dataTransfer.files.length) {
-            handleFile(e.dataTransfer.files[0], type);
+            handleFile(e.dataTransfer.files[0], type, isVideo);
         }
     });
     
     // Handle file selection
     fileInput.addEventListener('change', () => {
         if (fileInput.files.length) {
-            handleFile(fileInput.files[0], type);
+            handleFile(fileInput.files[0], type, isVideo);
         }
     });
     
     // File processing
-    function handleFile(file, type) {
-        // Determine if file is video or image
-        const isFileVideo = file.type.startsWith('video/');
-        
-        if (isFileVideo) {
-            // Handle video file
-            const validVideoFormats = ['video/mp4', 'video/webm', 'video/ogg'];
-            if (!validVideoFormats.includes(file.type)) {
-                showToast('Please select an MP4, WebM, or OGG video file for best compatibility', 'error');
+    function handleFile(file, type, isVideo) {
+        if (isVideo) {
+            if (!file.type.match('video.*')) {
+                alert('Please select a video file');
                 return;
             }
             
-            // For carrier videos, check size limit (20MB for carrier)
-            const maxSizeMB = (type === 'encrypt' || type === 'decrypt') ? 20 : 5;
+            // Check video format and extension
+            const validVideoFormats = ['video/mp4', 'video/webm', 'video/ogg'];
+            if (!validVideoFormats.includes(file.type)) {
+                alert('Please select an MP4, WebM, or OGG video file for best compatibility');
+                return;
+            }
+            
+            // Check size limit (5MB initially)
+            const maxSizeMB = 5;
             const fileSizeMB = file.size / (1024 * 1024);
             if (fileSizeMB > maxSizeMB) {
-                showToast(`Video is too large (${fileSizeMB.toFixed(1)}MB). Maximum size is ${maxSizeMB}MB.`, 'error');
+                alert(`Video is too large (${fileSizeMB.toFixed(1)}MB). Maximum size is ${maxSizeMB}MB.`);
                 return;
             }
             
             // Create video preview
             const videoURL = URL.createObjectURL(file);
             
-            // Hide image preview, show video preview
-            if (imagePreview) imagePreview.style.display = 'none';
-            if (videoPreview) {
-                videoPreview.src = videoURL;
-                videoPreview.style.display = 'block';
-            }
-            
-            // Hide placeholder
-            if (placeholder) placeholder.style.display = 'none';
+            // Set up video element
+            preview.src = videoURL;
+            preview.style.display = 'block';
+            placeholder.style.display = 'none';
             
             // Add video info below the preview
             const infoElement = document.createElement('div');
@@ -357,82 +353,67 @@ function setupUploadArea(type, areaId, previewId, inputId, isVideo = false) {
             `;
             
             // Add duration info when metadata loads
-            if (videoPreview) {
-                videoPreview.onloadedmetadata = () => {
-                    const duration = videoPreview.duration;
-                    const minutes = Math.floor(duration / 60);
-                    const seconds = Math.floor(duration % 60);
-                    infoElement.innerHTML += `<p>Duration: ${minutes}:${seconds.toString().padStart(2, '0')}</p>`;
-                    
-                    // Display warning for longer videos
-                    if (type === 'secret-video' && duration > 10) {
-                        infoElement.innerHTML += `<p class="warning">Warning: Longer videos require larger carrier files</p>`;
-                    }
-                };
-            }
+            preview.onloadedmetadata = () => {
+                const duration = preview.duration;
+                const minutes = Math.floor(duration / 60);
+                const seconds = Math.floor(duration % 60);
+                infoElement.innerHTML += `<p>Duration: ${minutes}:${seconds.toString().padStart(2, '0')}</p>`;
+                
+                // Display warning for longer videos
+                if (duration > 10) {
+                    infoElement.innerHTML += `<p class="warning">Warning: Longer videos require larger carrier images</p>`;
+                }
+            };
             
             // Replace any existing info
             const existingInfo = uploadArea.querySelector('.video-info');
             if (existingInfo) {
-                uploadArea.removeChild(existingInfo);
+                existingInfo.remove();
             }
+            
+            // Add info after the preview
             uploadArea.appendChild(infoElement);
             
+            // Enable button if other fields are filled
+            const btn = document.getElementById(`${type}-btn`);
+            if (type === 'encrypt' || type === 'secret-video') {
+                const key = document.getElementById('encrypt-key').value;
+                const encryptPreview = document.getElementById('encrypt-preview');
+                btn.disabled = !key || encryptPreview.style.display !== 'block';
+            }
+            
+            // Add event listener to handle errors
+            preview.onerror = () => {
+                alert('Error loading video preview. This video format may not be supported by your browser.');
+                preview.style.display = 'none';
+                placeholder.style.display = 'block';
+            };
         } else {
-            // Handle image file
             if (!file.type.match('image.*')) {
-                showToast('Please select an image file', 'error');
+                alert('Please select an image file');
                 return;
             }
             
-            // Create image preview
             const reader = new FileReader();
-            reader.onload = (e) => {
-                if (imagePreview) {
-                    imagePreview.src = e.target.result;
-                    imagePreview.style.display = 'block';
+            
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                placeholder.style.display = 'none';
+                
+                // Enable button if other fields are filled
+                const btn = document.getElementById(`${type}-btn`);
+                if (type === 'encrypt') {
+                    const message = document.getElementById('message-input').value;
+                    const key = document.getElementById('encrypt-key').value;
+                    btn.disabled = !message || !key;
+                } else if (type === 'decrypt') {
+                    const key = document.getElementById('decrypt-key').value;
+                    btn.disabled = !key;
                 }
-                
-                // Hide video preview if exists
-                if (videoPreview) videoPreview.style.display = 'none';
-                
-                // Hide placeholder
-                if (placeholder) placeholder.style.display = 'none';
-                
-                // Add image info below preview
-                const imageElement = new Image();
-                imageElement.onload = function() {
-                    const width = imageElement.width;
-                    const height = imageElement.height;
-                    const fileSizeMB = file.size / (1024 * 1024);
-                    
-                    const infoElement = document.createElement('div');
-                    infoElement.className = 'image-info';
-                    infoElement.innerHTML = `
-                        <p>File: ${file.name}</p>
-                        <p>Size: ${fileSizeMB.toFixed(1)}MB</p>
-                        <p>Dimensions: ${width}x${height}</p>
-                    `;
-                    
-                    // Replace any existing info
-                    const existingInfo = uploadArea.querySelector('.image-info');
-                    if (existingInfo) {
-                        uploadArea.removeChild(existingInfo);
-                    }
-                    uploadArea.appendChild(infoElement);
-                };
-                imageElement.src = e.target.result;
             };
+            
             reader.readAsDataURL(file);
-        }
-        
-        // Update button states based on the uploaded file
-        if (type === 'encrypt') {
-            updateEncryptButtonState();
-        } else if (type === 'decrypt') {
-            const decryptKeyInput = document.getElementById('decrypt-key');
-            const decryptBtn = document.getElementById('decrypt-btn');
-            decryptBtn.disabled = !decryptKeyInput.value;
         }
     }
 }
