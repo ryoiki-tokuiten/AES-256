@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Message - Image Encryption</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        @import url("https://fonts.cdnfonts.com/css/sf-pro-display");
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="blob"></div>
+            <div class="blob"></div>
+            <div class="header-content">
+                <h1>Secure Message</h1>
+                <p>Encrypt your messages securely within images</p>
+                <div class="header-actions">
+                    <button id="test-compatibility-btn" class="small-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        Test Compatibility
+                    </button>
+                    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle dark mode">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="moon-icon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="sun-icon" style="display:none"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <div class="tabs-container">
+                <button class="tab-btn active" data-tab="encrypt">Encrypt</button>
+                <button class="tab-btn" data-tab="decrypt">Decrypt</button>
+                <div class="tab-active-bg"></div>
+            </div>
+        </div>
+
+        <div class="tab-content">
+            <!-- Encryption Section -->
+            <div class="tab-pane active" id="encrypt-tab">
+                <div class="card">
+                    <h2>Message Encryption</h2>
+                    <div class="step">
+                        <h3>Step 1: Upload an Image or Video</h3>
+                        <div class="upload-area" id="encrypt-upload-area">
+                            <div class="upload-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 10px;"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                                <p>Drag & drop image or video or click to upload</p>
+                            </div>
+                            <img id="encrypt-preview" class="preview-image" src="" alt="" style="display: none;">
+                            <video id="encrypt-video-preview" class="preview-video" controls style="display: none; max-width: 100%; max-height: 300px;"></video>
+                            <input type="file" id="encrypt-file-input" accept="image/*,video/*" hidden>
+                        </div>
+                        <div class="image-tip">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            For images, use PNG for best results. The minimum recommended size is 100x100 pixels. For videos, use MP4, WebM, or OGG with a recommended size under 20MB.
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <h3>Step 2: Choose What to Hide</h3>
+                        <div class="encryption-mode-selector">
+                            <label class="mode-option">
+                                <input type="radio" name="encryption-mode" value="text" checked>
+                                <span class="mode-label">Hide Text</span>
+                            </label>
+                            <label class="mode-option">
+                                <input type="radio" name="encryption-mode" value="image">
+                                <span class="mode-label">Hide Image</span>
+                            </label>
+                            <label class="mode-option">
+                                <input type="radio" name="encryption-mode" value="video">
+                                <span class="mode-label">Hide Video</span>
+                            </label>
+                        </div>
+                        
+                        <div id="text-encryption-input" class="encryption-input-container">
+                            <textarea id="message-input" placeholder="Type the message you want to encrypt..."></textarea>
+                        </div>
+                        
+                        <div id="image-encryption-input" class="encryption-input-container" style="display:none">
+                            <h4>Upload Image to Hide</h4>
+                            <div class="upload-area" id="secret-image-upload-area">
+                                <div class="upload-placeholder">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                    <p>Drag & drop image to hide or click to upload</p>
+                                </div>
+                                <img id="secret-image-preview" src="#" alt="Preview" style="display: none; max-width: 100%; max-height: 200px;">
+                                <input type="file" id="secret-image-file-input" accept="image/*" style="display: none;">
+                            </div>
+                            <div class="image-tip">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                The secret image will be scaled down if necessary to fit inside the cover image.
+                            </div>
+                        </div>
+                        
+                        <div id="video-encryption-input" class="encryption-input-container" style="display:none">
+                            <h4>Upload Video to Hide</h4>
+                            <div class="upload-area" id="secret-video-upload-area">
+                                <div class="upload-placeholder">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                                    <p>Drag & drop video to hide or click to upload</p>
+                                </div>
+                                <video id="secret-video-preview" controls style="display: none; max-width: 100%; max-height: 200px;"></video>
+                                <input type="file" id="secret-video-file-input" accept="video/*" style="display: none;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <h3>Step 3: Enter Encryption Key</h3>
+                        <input type="password" id="encrypt-key" placeholder="Enter a strong encryption key">
+                    </div>
+
+                    <div class="progress-bar-container" id="encrypt-progress">
+                        <div class="progress-bar"></div>
+                    </div>
+                    
+                    <button id="encrypt-btn" class="action-btn magnetic-btn" disabled>Encrypt Message</button>
+                    <a id="download-link" class="action-btn download-btn magnetic-btn" style="display:none" download="encrypted-image.png">Download Encrypted Image</a>
+                    
+                    <div id="encrypt-debug-info" style="display:none" class="debug-container">
+                        <h4>Encryption Process Details</h4>
+                        <div id="encrypt-debug-message"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Decryption Section -->
+            <div class="tab-pane" id="decrypt-tab">
+                <div class="card">
+                    <h2>Message Decryption</h2>
+                    <div class="step">
+                        <h3>Step 1: Upload Encrypted Image or Video</h3>
+                        <div class="upload-area" id="decrypt-upload-area">
+                            <div class="upload-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-left: 10px;"><polygon points="23 7 16 12 23 17 23 7"></polygon><rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect></svg>
+                                <p>Drag & drop encrypted image or video or click to upload</p>
+                            </div>
+                            <img id="decrypt-preview" class="preview-image" src="" alt="" style="display: none;">
+                            <video id="decrypt-video-preview" class="preview-video" controls style="display: none; max-width: 100%; max-height: 300px;"></video>
+                            <input type="file" id="decrypt-file-input" accept="image/*,video/*" hidden>
+                        </div>
+                        <div class="image-tip">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            Important: Do not resize, compress, or edit the encrypted file in any way.
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <h3>Step 2: Enter Decryption Key</h3>
+                        <input type="password" id="decrypt-key" placeholder="Enter the decryption key">
+                    </div>
+
+                    <div class="progress-bar-container" id="decrypt-progress">
+                        <div class="progress-bar"></div>
+                    </div>
+                    
+                    <button id="decrypt-btn" class="action-btn magnetic-btn" disabled>Decrypt Message</button>
+                    <button id="show-debug-btn" class="secondary-btn" style="margin-top: 10px;">Show Troubleshooting Info</button>
+
+                    <div class="result-container" style="display:none">
+                        <h3>Decrypted Content:</h3>
+                        <div id="decrypted-message" class="result-message"></div>
+                        <img id="decrypted-image" class="result-image" style="display: none; max-width: 100%; margin-top: 15px;" />
+                        <video id="decrypted-video" class="result-video" controls style="display: none; max-width: 100%; margin-top: 15px;"></video>
+                        <a id="download-decrypted-file" class="action-btn download-btn magnetic-btn" style="display:none; margin-top: 15px;">Download Decrypted File</a>
+                    </div>
+                    
+                    <div id="debug-info" style="display:none" class="debug-container">
+                        <h4>Troubleshooting Information</h4>
+                        <div id="debug-message"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>Securely encrypting your messages with AES-256</p>
+        <p><small>Note: Don't resize, crop, or compress encrypted images - it will corrupt the hidden data.</small></p>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">
+        <div class="toast-icon"></div>
+        <div class="toast-message"></div>
+    </div>
+
+    <!-- Dialog for compatibility test -->
+    <div id="dialog-overlay" class="dialog-overlay"></div>
+    <div id="dialog" class="app-dialog">
+        <div class="dialog-header">
+            <h3>Browser Compatibility Results</h3>
+            <button id="close-dialog" class="close-dialog">×</button>
+        </div>
+        <div id="dialog-content"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
